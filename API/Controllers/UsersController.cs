@@ -10,6 +10,7 @@ using AutoMapper;
 using System.Security.Claims;
 using API.Extensions;
 using API.Services;
+using CloudinaryDotNet.Actions;
 
 namespace API.Controllers;
 
