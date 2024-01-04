@@ -24,12 +24,14 @@ namespace API.Data
         public DbSet<Message> Messages { get; set; }
         public DbSet<Group> Groups { get; set; }
         public DbSet<Connection> Connections { get; set; }
+        public DbSet<Photo> Photos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
             builder.Entity<UserLike>().HasKey(k => new { k.SourceUserId, k.TargetUserId });
+            builder.Entity<Photo>().HasQueryFilter(p => p.IsApproved);
 
             builder
                 .Entity<AppUser>()

@@ -1,11 +1,18 @@
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using API.DTOs;
 using API.Entities;
+using API.Extensions;
 using API.Helpers;
 using API.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using System.Xml.XPath;
+using System.Runtime.CompilerServices;
 
 namespace API.Data
 {
@@ -20,12 +27,17 @@ namespace API.Data
             _mapper = mapper;
         }
 
-        public async Task<MemberDto> GetMemberAsync(string username)
+        public async Task<MemberDto> GetMemberAsync(string username, bool isCurrentUser)
         {
-            return await _context.Users
-                .Where(x => x.UserName == username)
+            var query = _context.Users
+                .Where(u => u.UserName == username)
                 .ProjectTo<MemberDto>(_mapper.ConfigurationProvider)
-                .SingleOrDefaultAsync();
+                .AsQueryable();
+
+            if (isCurrentUser)
+                query = query.IgnoreQueryFilters();
+
+            return await query.FirstOrDefaultAsync();
         }
 
         public async Task<PagedList<MemberDto>> GetMembersAsync(UserParams userParams)
@@ -34,7 +46,7 @@ namespace API.Data
             query = query.Where(u => u.UserName != userParams.CurrentUsername);
             query = query.Where(u => u.Gender == userParams.Gender);
 
-            var minDob = DateOnly.FromDateTime(DateTime.Today.AddYears(-userParams.MaxAge-1));
+            var minDob = DateOnly.FromDateTime(DateTime.Today.AddYears(-userParams.MaxAge - 1));
             var maxDob = DateOnly.FromDateTime(DateTime.Today.AddYears(-userParams.MinAge));
 
             query = query.Where(u => u.DateOfBirth <= maxDob && u.DateOfBirth >= minDob);
@@ -66,8 +78,19 @@ namespace API.Data
 
         public async Task<string> GetUserGender(string username)
         {
-            return await _context.Users.Where(x => x.UserName == username)
-                .Select(x => x.Gender).FirstOrDefaultAsync();
+            return await _context.Users
+                .Where(x => x.UserName == username)
+                .Select(x => x.Gender)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<AppUser> GetUserByPhotoId(int photoId)
+        {
+            return await _context.Users
+                .Include(x => x.Photos)
+                .IgnoreQueryFilters()
+                .Where(x => x.Photos.Any(p => p.Id == photoId))
+                .FirstOrDefaultAsync();
         }
 
         public async Task<IEnumerable<AppUser>> GetUsersAsync()
