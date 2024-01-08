@@ -14,11 +14,6 @@ namespace API.Extensions
             IConfiguration config
         )
         {
-            services.AddDbContext<DataContext>(opt =>
-            {
-                opt.UseSqlite(config.GetConnectionString("DefaultConnection"));
-            });
-
             services.AddCors();
             services.AddScoped<ITokenService, TokenService>();
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
